@@ -9,9 +9,12 @@ import javax.persistence.CollectionTable;
 import javax.persistence.ElementCollection;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.persistence.OrderBy;
 import javax.persistence.Table;
 
@@ -32,11 +35,22 @@ public class Campus implements Serializable {
 	@CollectionTable(name = "campussentelefoonnrs", joinColumns = @JoinColumn(name = "campusid"))
 	@OrderBy("fax")
 	private Set<TelefoonNr> telefoonNrs;
+	@OneToMany(mappedBy = "campus")
+	// @JoinColumn(name = "campusid")
+	@OrderBy("voornaam, familienaam")
+	private Set<Docent> docenten;
+	@OneToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "managerid")
+	private Manager manager;
+	public Manager getManager() {
+	return manager;
+	}
 
 	public Campus(String naam, Adres adres) {
 		setNaam(naam);
 		setAdres(adres);
 		telefoonNrs = new LinkedHashSet<>();
+		docenten = new LinkedHashSet<>();
 	}
 
 	protected Campus() {
@@ -52,6 +66,26 @@ public class Campus implements Serializable {
 
 	public void removeTelefoonNr(TelefoonNr telefoonNr) {
 		telefoonNrs.remove(telefoonNr);
+	}
+
+	public Set<Docent> getDocenten() {
+		return Collections.unmodifiableSet(docenten);
+	}
+
+	public void addDocent(Docent docent) {
+		docenten.add(docent);
+		if (docent.getCampus() != this) { // als de andere kant nog niet
+											// bijgewerkt is
+			docent.setCampus(this); // werk je de andere kant bij
+		}
+	}
+
+	public void removeDocent(Docent docent) {
+		docenten.remove(docent);
+		if (docent.getCampus() == this) { // als de andere kant nog niet
+											// bijgewerkt is
+			docent.setCampus(null); // werk je de andere kant bij
+		}
 	}
 
 	public long getId() {

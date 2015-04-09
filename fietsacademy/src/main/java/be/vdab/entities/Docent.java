@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import javax.persistence.CollectionTable;
@@ -13,10 +14,13 @@ import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinColumns;
+import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 import be.vdab.enums.Geslacht;
@@ -41,6 +45,11 @@ public class Docent implements Serializable {
 	@CollectionTable(name = "docentenbijnamen", joinColumns = @JoinColumn(name = "docentid"))
 	@Column(name = "Bijnaam")
 	private Set<String> bijnamen;
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "campusid")
+	private Campus campus;
+	@ManyToMany(mappedBy = "docenten")
+	private Set<Verantwoordelijkheid> verantwoordelijkheden;
 
 	public Docent(String voornaam, String familienaam, BigDecimal wedde,
 			Geslacht geslacht, long rijksRegisterNr) {
@@ -50,6 +59,7 @@ public class Docent implements Serializable {
 		setGeslacht(geslacht);
 		setRijksRegisterNr(rijksRegisterNr);
 		bijnamen = new HashSet<>();
+		verantwoordelijkheden = new LinkedHashSet<>();
 	}
 
 	protected Docent() {
@@ -154,6 +164,55 @@ public class Docent implements Serializable {
 		// bijnamen toevoegen of verwijderen door .add() of .remove() toe te
 		// passen op de Set, vanddar unmodifiableSet voor een read only weergave
 		return Collections.unmodifiableSet(bijnamen);
+	}
+
+	public Campus getCampus() {
+		return campus;
+	}
+
+	public void setCampus(Campus campus) {
+		if (this.campus != null && this.campus.getDocenten().contains(this)) {
+			// als de andere kant nog niet bijgewerkt is
+			this.campus.removeDocent(this); // werk je de andere kant bij
+		}
+		this.campus = campus;
+		if (campus != null && !campus.getDocenten().contains(this)) {
+			// als de andere kant nog niet bijgewerkt is
+			campus.addDocent(this); // werk je de andere kant bij
+		}
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof Docent)) {
+			return false;
+		}
+		return ((Docent) obj).rijksRegisterNr == rijksRegisterNr;
+	}
+
+	@Override
+	public int hashCode() {
+		return Long.valueOf(rijksRegisterNr).hashCode();
+	}
+
+	public void addVerantwoordelijkheid(
+			Verantwoordelijkheid verantwoordelijkheid) {
+		verantwoordelijkheden.add(verantwoordelijkheid);
+		if (!verantwoordelijkheid.getDocenten().contains(this)) {
+			verantwoordelijkheid.addDocent(this);
+		}
+	}
+
+	public void removeVerantwoordelijkheid(
+			Verantwoordelijkheid verantwoordelijkheid) {
+		verantwoordelijkheden.remove(verantwoordelijkheid);
+		if (verantwoordelijkheid.getDocenten().contains(this)) {
+			verantwoordelijkheid.removeDocent(this);
+		}
+	}
+
+	public Set<Verantwoordelijkheid> getVerantwoordelijkheden() {
+		return Collections.unmodifiableSet(verantwoordelijkheden);
 	}
 
 }
