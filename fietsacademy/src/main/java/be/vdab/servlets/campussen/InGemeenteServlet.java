@@ -16,7 +16,7 @@ public class InGemeenteServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	private static final String VIEW = "/WEB-INF/JSP/campussen/ingemeente.jsp";
 	private final transient CampusService campusService = new CampusService();
-	private final String tryOut = "Dit is een poging om the fetchen en mergen";
+	
 
 	@Override
 	protected void doGet(HttpServletRequest request,
