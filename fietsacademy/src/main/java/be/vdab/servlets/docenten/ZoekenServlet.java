@@ -1,7 +1,10 @@
 package be.vdab.servlets.docenten;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -19,6 +22,7 @@ public class ZoekenServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	private static final String VIEW = "/WEB-INF/JSP/docenten/zoeken.jsp";
 	private final transient DocentService docentservice = new DocentService();
+	public static final String REDIRECT_URL = "%s/docenten/zoeken.htm?id=%d";
 
 	@Override
 	protected void doGet(HttpServletRequest request,
@@ -33,5 +37,46 @@ public class ZoekenServlet extends HttpServlet {
 			}
 		}
 		request.getRequestDispatcher(VIEW).forward(request, response);
+	}
+
+	@Override
+	protected void doPost(HttpServletRequest request,
+			HttpServletResponse response) throws ServletException, IOException {
+		long id = Long.parseLong(request.getParameter("id"));
+		if (request.getParameter("verwijderen") == null) {
+			bijnamenToevoegen(request, response, id);
+		} else {
+			bijnamenVerwijderen(request, response, id);
+		}
+	}
+
+	private void bijnamenVerwijderen(HttpServletRequest request,
+			HttpServletResponse response, long id) throws IOException {
+
+		// cursus p.61: String[] bijnamen =
+		// request.getParameterValues("bijnaam");
+		List<String> bijnamen = Arrays.asList(request
+				.getParameterValues("bijnaam"));
+		if (bijnamen != null) {
+			docentservice.bijnamenVerwijderen(id, bijnamen);
+		}
+		response.sendRedirect(response.encodeRedirectURL(String.format(
+				REDIRECT_URL, request.getContextPath(), id)));
+	}
+
+	private void bijnamenToevoegen(HttpServletRequest request,
+			HttpServletResponse response, long id) throws IOException,
+			ServletException {
+		String bijnaam = request.getParameter("bijnaam");
+		if (bijnaam == null || bijnaam.isEmpty()) {
+			request.setAttribute("fouten",
+					Collections.singletonMap("bijnaam", "verplicht"));
+			request.setAttribute("docent", docentservice.read(id));
+			request.getRequestDispatcher(VIEW).forward(request, response);
+		} else {
+			docentservice.bijnaamToevoegen(id, bijnaam);
+			response.sendRedirect(response.encodeRedirectURL(String.format(
+					REDIRECT_URL, request.getContextPath(), id)));
+		}
 	}
 }

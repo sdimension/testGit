@@ -113,6 +113,14 @@ public class Docent implements Serializable {
 		wedde = wedde.multiply(factor).setScale(2, RoundingMode.HALF_UP);
 	}
 
+	public void addBijnaam(String bijnaam) {
+		bijnamen.add(bijnaam);
+	}
+
+	public void removeBijnaam(String bijnaam) {
+		bijnamen.remove(bijnaam);
+	}
+
 	public String getNaam() {
 		return voornaam + ' ' + familienaam;
 	}
