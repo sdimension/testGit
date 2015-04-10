@@ -3,14 +3,20 @@ package be.vdab.services;
 import java.math.BigDecimal;
 import java.util.List;
 
+import javax.persistence.OptimisticLockException;
+import javax.persistence.RollbackException;
+
+import be.vdab.dao.CampusDAO;
 import be.vdab.dao.DocentDAO;
 import be.vdab.entities.Docent;
 import be.vdab.exceptions.DocentBestaatAlException;
+import be.vdab.exceptions.RecordAangepastException;
 import be.vdab.valueobjects.AantalDocentenPerWedde;
 import be.vdab.valueobjects.VoornaamEnId;
 
 public class DocentService {
 	private final DocentDAO docentDAO = new DocentDAO();
+	private final CampusDAO campusDAO = new CampusDAO();
 
 	public Docent read(long id) {
 		return docentDAO.read(id);
@@ -31,10 +37,24 @@ public class DocentService {
 		docentDAO.commit();
 	}
 
+	// MET PESSIMISTIC RECORD LOCKING
+	// public void opslag(long id, BigDecimal percentage) {
+	// docentDAO.beginTransaction();
+	// docentDAO.readWithLock(id).opslag(percentage);
+	// docentDAO.commit();
+	// }
+
+	// MET OPTIMISTIC RECORD LOCKING
 	public void opslag(long id, BigDecimal percentage) {
 		docentDAO.beginTransaction();
 		docentDAO.read(id).opslag(percentage);
-		docentDAO.commit();
+		try {
+			docentDAO.commit();
+		} catch (RollbackException ex) {
+			if (ex.getCause() instanceof OptimisticLockException) {
+				throw new RecordAangepastException();
+			}
+		}
 	}
 
 	public List<Docent> findByWeddeBetween(BigDecimal van, BigDecimal tot,
@@ -79,6 +99,10 @@ public class DocentService {
 			docent.removeBijnaam(bijnaam);
 		}
 		docentDAO.commit();
+	}
+
+	public List<Docent> findBestBetaaldeVanEenCampus(long id) {
+		return docentDAO.findBestBetaaldeVanEenCampus(campusDAO.read(id));
 	}
 
 }
